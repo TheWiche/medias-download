@@ -15,6 +15,8 @@ const ASSETS_TO_CACHE = [
   './js/pwa/registerServiceWorker.js',
   './js/pwa/installPrompt.js',
   './js/pwa/shareTarget.js',
+  './icon-192.png',
+  './icon-512.png',
   'https://cdn.tailwindcss.com',
   'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap'
 ];
