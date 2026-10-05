@@ -1,7 +1,8 @@
 /**
  * Módulo para interactuar con la API de Cobalt.
  */
-const API_URL = 'https://api.cobalt.tools/';
+// Utilizamos una instancia comunitaria pública ya que la oficial requiere API Key
+const API_URL = 'https://cobalt.q0.app/';
 
 export async function fetchDownloadUrl(url, format) {
     // La versión actual de la API de Cobalt (cobalt.tools/api) acepta parámetros de forma ligeramente distinta
