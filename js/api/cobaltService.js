@@ -1,61 +1,43 @@
 /**
- * Módulo para interactuar con la API de Cobalt.
+ * Módulo para interactuar con la API de Descargas (Reemplazo de Cobalt).
  */
-// Utilizamos una instancia comunitaria pública ya que la oficial requiere API Key
-const API_URL = 'https://cobalt.q0.app/';
+const API_URL = 'https://api.vkrdownloader.vercel.app/server?vkr=';
 
 export async function fetchDownloadUrl(url, format) {
-    // La versión actual de la API de Cobalt (cobalt.tools/api) acepta parámetros de forma ligeramente distinta
-    // y requiere headers estrictos en algunos casos.
-    const payload = { 
-        url: url,
-        // downloadMode fue reemplazado en la v11 por otros campos, o puede requerirse aAudio/isAudioOnly. 
-        // Usamos la configuración recomendada para extraer solo audio:
-        ...(format === 'audio' && { isAudioOnly: true, aFormat: "best" }) 
-    };
-
     try {
-        const response = await fetch(API_URL, {
-            method: 'POST',
+        // Usamos una API pública alternativa porque Cobalt cerró su acceso libre globalmente
+        const response = await fetch(`${API_URL}${encodeURIComponent(url)}`, {
+            method: 'GET',
             headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-                // A veces es útil mandar un User-Agent distinto o CORS restringe, pero lo básico es:
-            },
-            body: JSON.stringify(payload)
+                'Accept': 'application/json'
+            }
         });
 
-        // Verificamos si falló en nivel HTTP (ej. 403, 429, 500)
         if (!response.ok) {
-            // Extraer el texto para analizar qué está rechazando el servidor
-            const errorText = await response.text();
-            console.error(`[Cobalt API Error] HTTP ${response.status}:`, errorText);
-            
-            try {
-                // Intentar parsearlo por si es JSON
-                const errJson = JSON.parse(errorText);
-                throw new Error(errJson.text || errJson.error?.text || `Error HTTP ${response.status}`);
-            } catch(e) {
-                // Si no era JSON, lanzar el texto crudo
-                throw new Error(`Error de servidor (${response.status}): ${errorText.substring(0, 50)}...`);
-            }
+            throw new Error(`Error de servidor (${response.status})`);
         }
 
         const data = await response.json();
 
-        if (data.status === 'error') {
-            console.error("[Cobalt API Error] Status Error:", data);
-            throw new Error(data.text || 'Ocurrió un error interno en la API.');
+        // Extraer la URL dependiendo de la respuesta de esta nueva API
+        let downloadUrl = null;
+        
+        if (data && data.data && data.data.downloads && data.data.downloads.length > 0) {
+            if (format === 'audio') {
+                const audioObj = data.data.downloads.find(d => d.format === 'mp3' || d.format === 'm4a');
+                downloadUrl = audioObj ? audioObj.url : data.data.downloads[0].url;
+            } else {
+                const videoObj = data.data.downloads.find(d => d.format === 'mp4');
+                downloadUrl = videoObj ? videoObj.url : data.data.downloads[0].url;
+            }
         }
 
-        if (data.url) return data.url;
+        if (downloadUrl) return downloadUrl;
 
-        console.error("[Cobalt API Error] No URL in response:", data);
-        throw new Error('No se recibió URL de descarga de la API.');
+        throw new Error('No se encontró un enlace de descarga válido.');
         
     } catch (error) {
-        // Bloque general que atrapa fallas de red (CORS, offline) y nuestros throw Error
-        console.error("[Cobalt API Try/Catch] Petición fallida:", error);
-        throw error;
+        console.error("[Downloader API Error] Petición fallida:", error);
+        throw new Error('La API pública rechazó la petición o está saturada.');
     }
 }
