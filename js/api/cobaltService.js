@@ -1,43 +1,61 @@
 /**
- * Módulo para interactuar con la API de Descargas (Reemplazo de Cobalt).
+ * Módulo para interactuar con la API de Cobalt.
+ * Implementa un sistema de "Fallback" (Rotación de servidores) para evadir caídas.
  */
-const API_URL = 'https://api.vkrdownloader.vercel.app/server?vkr=';
+const INSTANCES = [
+    'https://co.wuk.sh/',
+    'https://cobalt.owo.network/',
+    'https://co.pussthecat.org/',
+    'https://cobalt.tu.fo/',
+    'https://cobalt.kwiatechu.com/',
+    'https://api.cobalt.tools/' // El oficial al final (por si le quitan el auth)
+];
 
 export async function fetchDownloadUrl(url, format) {
-    try {
-        // Usamos una API pública alternativa porque Cobalt cerró su acceso libre globalmente
-        const response = await fetch(`${API_URL}${encodeURIComponent(url)}`, {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json'
+    const payload = { 
+        url: url,
+        ...(format === 'audio' && { isAudioOnly: true, aFormat: "best" }) 
+    };
+
+    let lastError = null;
+
+    // Intentar con cada servidor uno por uno hasta que uno responda con éxito
+    for (const apiUrl of INSTANCES) {
+        try {
+            console.log(`[Downloader] Intentando con servidor: ${apiUrl}`);
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                lastError = `Servidor ${apiUrl} respondió HTTP ${response.status}`;
+                continue; // Saltar al siguiente servidor
             }
-        });
 
-        if (!response.ok) {
-            throw new Error(`Error de servidor (${response.status})`);
-        }
+            const data = await response.json();
 
-        const data = await response.json();
-
-        // Extraer la URL dependiendo de la respuesta de esta nueva API
-        let downloadUrl = null;
-        
-        if (data && data.data && data.data.downloads && data.data.downloads.length > 0) {
-            if (format === 'audio') {
-                const audioObj = data.data.downloads.find(d => d.format === 'mp3' || d.format === 'm4a');
-                downloadUrl = audioObj ? audioObj.url : data.data.downloads[0].url;
-            } else {
-                const videoObj = data.data.downloads.find(d => d.format === 'mp4');
-                downloadUrl = videoObj ? videoObj.url : data.data.downloads[0].url;
+            if (data.status === 'error') {
+                lastError = data.text || 'Error interno en la API';
+                continue;
             }
+
+            if (data.url) {
+                console.log(`[Downloader] ¡Éxito con ${apiUrl}!`);
+                return data.url;
+            }
+            
+        } catch (error) {
+            console.warn(`[Downloader] Servidor ${apiUrl} caído o bloqueado. Probando el siguiente...`);
+            lastError = error.message;
         }
-
-        if (downloadUrl) return downloadUrl;
-
-        throw new Error('No se encontró un enlace de descarga válido.');
-        
-    } catch (error) {
-        console.error("[Downloader API Error] Petición fallida:", error);
-        throw new Error('La API pública rechazó la petición o está saturada.');
     }
+
+    // Si todos fallan
+    console.error("[Downloader] Todos los servidores fallaron. Último error:", lastError);
+    throw new Error('Todos los servidores públicos están saturados ahora mismo. Intenta en unos minutos.');
 }
