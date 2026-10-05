@@ -1,61 +1,91 @@
 /**
- * Módulo para interactuar con la API de Cobalt.
- * Implementa un sistema de "Fallback" (Rotación de servidores) para evadir caídas.
+ * Módulo para interactuar con APIs de descarga (Alternativas a Cobalt).
+ * Implementa Proxys CORS para evadir bloqueos de navegador.
  */
-const INSTANCES = [
-    'https://co.wuk.sh/',
-    'https://cobalt.owo.network/',
-    'https://co.pussthecat.org/',
-    'https://cobalt.tu.fo/',
-    'https://cobalt.kwiatechu.com/',
-    'https://api.cobalt.tools/' // El oficial al final (por si le quitan el auth)
+
+// APIs alternativas gratuitas (No usan Cobalt)
+const FALLBACK_APIS = [
+    {
+        // VKR Downloader (Muy estable, devuelve JSON con 'data.downloads')
+        url: (link) => `https://api.vkrdownloader.vercel.app/server?vkr=${encodeURIComponent(link)}`,
+        parse: (data, format) => {
+            if (!data?.data?.downloads?.length) return null;
+            if (format === 'audio') {
+                const aud = data.data.downloads.find(d => d.format === 'mp3' || d.format === 'm4a');
+                return aud ? aud.url : data.data.downloads[0].url;
+            }
+            const vid = data.data.downloads.find(d => d.format === 'mp4');
+            return vid ? vid.url : data.data.downloads[0].url;
+        }
+    },
+    {
+        // Siputzx API (Alternativa asiática)
+        url: (link) => `https://api.siputzx.my.id/api/d/ytmp4?url=${encodeURIComponent(link)}`,
+        parse: (data, format) => {
+            if (data?.status && data?.data?.dl) return data.data.dl;
+            return null;
+        }
+    },
+    {
+        // Kizzy API
+        url: (link) => `https://api.kizzy.co/v1/youtube?url=${encodeURIComponent(link)}`,
+        parse: (data, format) => {
+            if (format === 'audio' && data?.audio?.length) return data.audio[0].url;
+            if (data?.video?.length) return data.video[0].url;
+            return null;
+        }
+    }
 ];
 
-export async function fetchDownloadUrl(url, format) {
-    const payload = { 
-        url: url,
-        ...(format === 'audio' && { isAudioOnly: true, aFormat: "best" }) 
-    };
+// Usaremos un Proxy CORS público por si las APIs están bloqueando peticiones directas desde el navegador
+const CORS_PROXY = "https://corsproxy.io/?";
 
+export async function fetchDownloadUrl(url, format) {
     let lastError = null;
 
-    // Intentar con cada servidor uno por uno hasta que uno responda con éxito
-    for (const apiUrl of INSTANCES) {
+    for (const api of FALLBACK_APIS) {
+        const targetUrl = api.url(url);
+        // Envolvemos la URL en el proxy CORS para engañar al servidor
+        const proxiedUrl = CORS_PROXY + encodeURIComponent(targetUrl);
+        
         try {
-            console.log(`[Downloader] Intentando con servidor: ${apiUrl}`);
-            const response = await fetch(apiUrl, {
-                method: 'POST',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(payload)
+            console.log(`[Downloader] Probando alternativa: ${targetUrl.split('/')[2]}`);
+            
+            const response = await fetch(proxiedUrl, {
+                method: 'GET',
+                headers: { 'Accept': 'application/json' }
             });
 
             if (!response.ok) {
-                lastError = `Servidor ${apiUrl} respondió HTTP ${response.status}`;
-                continue; // Saltar al siguiente servidor
-            }
-
-            const data = await response.json();
-
-            if (data.status === 'error') {
-                lastError = data.text || 'Error interno en la API';
+                lastError = `HTTP ${response.status}`;
                 continue;
             }
 
-            if (data.url) {
-                console.log(`[Downloader] ¡Éxito con ${apiUrl}!`);
-                return data.url;
+            const text = await response.text();
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch (e) {
+                lastError = 'Respuesta no es JSON válido';
+                continue;
+            }
+
+            const downloadLink = api.parse(data, format);
+            
+            if (downloadLink) {
+                console.log(`[Downloader] ¡Éxito con ${targetUrl.split('/')[2]}!`);
+                return downloadLink;
+            } else {
+                lastError = 'No se encontró enlace en la respuesta';
             }
             
         } catch (error) {
-            console.warn(`[Downloader] Servidor ${apiUrl} caído o bloqueado. Probando el siguiente...`);
+            console.warn(`[Downloader] Falló ${targetUrl.split('/')[2]}:`, error.message);
             lastError = error.message;
         }
     }
 
-    // Si todos fallan
-    console.error("[Downloader] Todos los servidores fallaron. Último error:", lastError);
-    throw new Error('Todos los servidores públicos están saturados ahora mismo. Intenta en unos minutos.');
+    // Si todas las alternativas fallan
+    console.error("[Downloader] Todas las APIs alternativas fallaron. Último error:", lastError);
+    throw new Error('Todas las APIs públicas están bloqueando la petición. Intenta descargar desde otra red o más tarde.');
 }
