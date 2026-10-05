@@ -1,0 +1,34 @@
+:root {
+    --bg-dark: #09090b;
+    --scroll-thumb: #27272a;
+    --scroll-thumb-hover: #3f3f46;
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-dark); }
+::-webkit-scrollbar-thumb { background: var(--scroll-thumb); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--scroll-thumb-hover); }
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active{
+    -webkit-box-shadow: 0 0 0 30px #27272a inset !important;
+    -webkit-text-fill-color: #f4f4f5 !important;
+    transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Animaciones Premium para Toasts */
+.animate-slide-in {
+    animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes slideIn {
+    0% { transform: translateX(100%) scale(0.9); opacity: 0; }
+    100% { transform: translateX(0) scale(1); opacity: 1; }
+}
+
+/* Permitir eventos de puntero en los toasts a pesar del contenedor */
+#toast-container > div {
+    pointer-events: auto;
+}

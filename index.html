@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Media's Download</title>
+
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#09090b">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Media's Download">
+    <link rel="apple-touch-icon" href="icon-192.png">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-zinc-950 text-zinc-100 min-h-screen flex items-center justify-center p-4 selection:bg-blue-500/30 overflow-x-hidden relative">
+    
+    <!-- Contenedor global de Toasts -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col items-end space-y-2 pointer-events-none w-full max-w-sm px-4 sm:px-0"></div>
+
+    <main class="w-full max-w-md flex flex-col gap-4">
+        
+        <!-- Tarjeta Principal -->
+        <div class="w-full bg-zinc-900 rounded-[2rem] shadow-2xl shadow-black/50 overflow-hidden border border-zinc-800/60 relative">
+            <div class="absolute -top-24 -left-24 w-48 h-48 bg-blue-600/20 rounded-full blur-3xl pointer-events-none"></div>
+            
+            <header class="pt-10 pb-6 px-6 text-center relative z-10">
+                <h1 class="text-3xl font-bold tracking-tight bg-gradient-to-br from-blue-400 via-blue-300 to-purple-400 bg-clip-text text-transparent">
+                    Media's Download
+                </h1>
+                <p class="text-zinc-400 text-sm mt-2 font-medium">Descarga tu multimedia favorita</p>
+            </header>
+
+            <form id="download-form" class="px-6 pb-7 space-y-7 relative z-10">
+                <!-- Input Interactivo -->
+                <div class="space-y-2.5">
+                    <label for="url" class="block text-sm font-medium text-zinc-300 pl-1">URL del Video</label>
+                    <div class="relative group">
+                        <div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-zinc-500 group-focus-within:text-blue-400 transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+                        </div>
+                        <input type="url" id="url" required placeholder="https://..." 
+                            class="block w-full pl-11 pr-24 py-3.5 bg-zinc-800/60 border border-zinc-700/60 rounded-2xl text-[15px] placeholder-zinc-500 text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/40 focus:bg-zinc-800 transition-all shadow-inner">
+                        
+                        <!-- Acciones internas (Pegar/Limpiar) -->
+                        <div class="absolute inset-y-0 right-2 flex items-center space-x-1.5">
+                            <button type="button" id="paste-btn" class="p-1.5 text-zinc-400 hover:text-white bg-zinc-700/40 hover:bg-zinc-600 rounded-lg transition-colors focus:outline-none pointer-events-auto" title="Pegar del portapapeles">
+                                <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 1.125rem; height: 1.125rem;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                            </button>
+                            <button type="button" id="clear-btn" class="hidden p-1.5 text-zinc-400 hover:text-white bg-zinc-700/40 hover:bg-red-500/80 rounded-lg transition-colors focus:outline-none pointer-events-auto" title="Limpiar">
+                                <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 1.125rem; height: 1.125rem;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Selector -->
+                <div class="space-y-2.5">
+                    <label class="block text-sm font-medium text-zinc-300 pl-1">Formato</label>
+                    <div class="flex p-1.5 space-x-1 bg-zinc-800/60 border border-zinc-700/60 rounded-2xl relative shadow-inner">
+                        <label class="flex-1 cursor-pointer relative z-10">
+                            <input type="radio" name="format" value="audio" checked class="peer sr-only">
+                            <div class="text-center px-4 py-3 text-sm font-semibold text-zinc-400 rounded-xl peer-checked:text-white transition-colors duration-300">Audio (MP3)</div>
+                        </label>
+                        <label class="flex-1 cursor-pointer relative z-10">
+                            <input type="radio" name="format" value="video" class="peer sr-only">
+                            <div class="text-center px-4 py-3 text-sm font-semibold text-zinc-400 rounded-xl peer-checked:text-white transition-colors duration-300">Video (MP4)</div>
+                        </label>
+                        <div class="absolute inset-y-1.5 w-[calc(50%-4px)] bg-zinc-700 shadow-sm rounded-xl transition-transform duration-300 ease-out z-0 left-1.5" id="format-slider"></div>
+                    </div>
+                </div>
+
+                <!-- Botón Descargar (con Spinner de estado integrado) -->
+                <button type="submit" id="submit-btn" 
+                    class="w-full flex items-center justify-center py-4 px-4 rounded-2xl text-[15px] font-semibold text-white bg-blue-600 hover:bg-blue-500 active:bg-blue-700 active:scale-[0.98] focus:outline-none transition-all shadow-lg shadow-blue-600/20 disabled:opacity-75 disabled:scale-100 disabled:pointer-events-none">
+                    <span id="btn-text">Descargar</span>
+                    <svg id="btn-spinner" class="hidden animate-spin ml-2 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </button>
+            </form>
+        </div>
+
+        <!-- Panel de Historial Colapsable -->
+        <div class="w-full bg-zinc-900/90 border border-zinc-800/60 rounded-2xl overflow-hidden shadow-lg backdrop-blur-md">
+            <button type="button" id="history-toggle" class="w-full px-5 py-4 flex items-center justify-between text-zinc-400 hover:text-white transition-colors focus:outline-none">
+                <span class="text-sm font-semibold flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Historial Reciente
+                </span>
+                <svg id="history-icon" class="w-4 h-4 opacity-70 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </button>
+            <div id="history-content" class="hidden border-t border-zinc-800/60 px-3 pb-3 pt-2">
+                <ul id="history-list" class="space-y-1.5 mt-1"></ul>
+            </div>
+        </div>
+
+        <!-- PWA Install Banner (Bottom Sheet) -->
+        <div id="pwa-install-banner" class="fixed bottom-0 left-0 right-0 z-[100] transform translate-y-full transition-transform duration-500 ease-out sm:max-w-md sm:mx-auto sm:bottom-4 sm:rounded-3xl">
+            <div class="bg-zinc-900 border-t sm:border border-zinc-700/60 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] p-5 pb-8 sm:pb-5">
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 flex-shrink-0 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="text-zinc-100 font-bold text-[15px]">Instalar Media's Download</h3>
+                        <div id="pwa-standard-instructions" class="text-zinc-400 text-sm mt-1 leading-relaxed">
+                            Añade la app a tu pantalla de inicio para acceso instantáneo y descargas rápidas.
+                        </div>
+                        <div id="pwa-ios-instructions" class="text-zinc-400 text-sm mt-1 leading-relaxed hidden">
+                            En iOS: Toca el ícono <strong>Compartir</strong> en Safari y selecciona <strong>"Añadir a inicio"</strong>.
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-5 flex gap-3">
+                    <button type="button" id="pwa-close-btn" class="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-zinc-300 bg-zinc-800 hover:bg-zinc-700 transition-colors focus:outline-none">
+                        Ahora no
+                    </button>
+                    <button type="button" id="pwa-install-btn" class="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-blue-600 hover:bg-blue-500 transition-colors focus:outline-none shadow-lg shadow-blue-600/20">
+                        Instalar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>

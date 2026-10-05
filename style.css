@@ -1,0 +1,30 @@
+/* CSS Base Adicional */
+/* Customizamos la scrollbar para mantener la estética oscura y limpia si hubiera overflow */
+
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: #09090b; /* zinc-950 */
+}
+
+::-webkit-scrollbar-thumb {
+    background: #27272a; /* zinc-800 */
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #3f3f46; /* zinc-700 */
+}
+
+/* Remover flechas del input number por si acaso se usan a futuro y ajustes webkit autofill */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active{
+    -webkit-box-shadow: 0 0 0 30px #27272a inset !important;
+    -webkit-text-fill-color: #f4f4f5 !important;
+    transition: background-color 5000s ease-in-out 0s;
+}
